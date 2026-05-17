@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abra Voice Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090f;
+    --surface: #0d1018;
+    --surface2: #131720;
+    --border: #1e2330;
+    --border2: #252c3d;
+    --text: #e2e6f0;
+    --muted: #5a6275;
+    --accent: #3ecf8e;
+    --accent-dim: #3ecf8e18;
+    --accent-border: #3ecf8e35;
+    --purple: #7c6ef8;
+    --purple-dim: #7c6ef818;
+    --orange: #f59e0b;
+    --orange-dim: #f59e0b18;
+    --red: #f04060;
+    --red-dim: #f0406018;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; font-size: 14px; display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  aside {
+    width: 230px; min-height: 100vh; background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+  }
+  .brand { padding: 28px 22px 24px; border-bottom: 1px solid var(--border); }
+  .brand-tag { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; }
+  .brand-name { font-size: 22px; font-weight: 700; line-height: 1; }
+  .brand-name span { color: var(--accent); }
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-dim); border: 1px solid var(--accent-border);
+    color: var(--accent); font-size: 10px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px; margin-top: 10px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  nav { flex: 1; padding: 16px 12px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: var(--radius);
+    cursor: pointer; font-size: 13px; font-weight: 500;
+    color: var(--muted); transition: all .15s; margin-bottom: 2px;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); background: var(--accent-dim); border-left-color: var(--accent); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer { padding: 18px 22px; font-size: 10px; color: var(--border2); border-top: 1px solid var(--border); }
+
+  /* ── Main ── */
+  main { margin-left: 230px; flex: 1; padding: 40px 44px; max-width: 1060px; }
+
+  /* ── Page header ── */
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 26px; font-weight: 700; }
+  .page-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  /* ── Stat cards ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    border-top: 3px solid var(--c, var(--border));
+  }
+  .stat-label { font-size: 10px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 36px; font-weight: 700; color: var(--c); font-family: 'IBM Plex Mono', monospace; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Card ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 18px; }
+  .card-title { font-size: 10px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+
+  /* ── Progress bar ── */
+  .bar-track { height: 10px; background: var(--surface2); border-radius: 20px; overflow: hidden; margin-bottom: 14px; display: flex; }
+  .bar-seg { height: 100%; transition: width .6s ease; }
+  .bar-legend { display: flex; gap: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── Table ── */
+  .leads-table { width: 100%; border-collapse: collapse; }
+  .leads-table th { font-size: 10px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .leads-table td { padding: 13px 16px; border-bottom: 1px solid var(--border)1a; font-size: 13px; }
+  .leads-table tr:last-child td { border-bottom: none; }
+  .leads-table tr:hover td { background: #ffffff04; }
+  .mono { font-family: 'IBM Plex Mono', monospace; color: var(--muted); }
+
+  /* ── Badge ── */
+  .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid; }
+
+  /* ── Form elements ── */
+  input[type="text"], input[type="tel"], input[type="number"] {
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text); padding: 11px 14px; border-radius: var(--radius);
+    font-size: 14px; font-family: 'IBM Plex Mono', monospace; outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--accent); }
+  input[type="file"] { color: var(--muted); font-size: 13px; font-family: 'Sora', sans-serif; }
+  .btn {
+    padding: 11px 24px; border-radius: var(--radius); border: none;
+    font-weight: 600; font-size: 13px; cursor: pointer; transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-secondary { background: var(--purple); color: #fff; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+
+  /* ── Input group ── */
+  .input-group { display: flex; gap: 10px; align-items: center; }
+  .input-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 7px; }
+
+  /* ── CSV hint box ── */
+  .code-hint {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    color: var(--muted); margin-bottom: 18px; line-height: 2;
+  }
+  .code-hint span { color: var(--accent); }
+
+  /* ── Call log ── */
+  .call-log-row { padding: 10px 0; border-bottom: 1px solid var(--border)55; display: flex; justify-content: space-between; font-size: 12px; }
+  .call-log-row:last-child { border-bottom: none; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; top: 22px; right: 22px; z-index: 999;
+    padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px;
+    box-shadow: 0 8px 30px #0006; display: none; animation: slideIn .2s ease;
+  }
+  @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* ── Tab content ── */
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  /* ── Empty state ── */
+  .empty { color: var(--muted); font-size: 13px; padding: 32px; text-align: center; }
+
+  /* ── Section divider ── */
+  .section-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside>
+  <div class="brand">
+    <div class="brand-tag">ABRA GROUP</div>
+    <div class="brand-name">Voice<span>Agent</span></div>
+    <div class="live-badge"><div class="dot"></div> LIVE</div>
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="switchTab('dashboard')">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="switchTab('call')">
+      <span class="nav-icon">◎</span> Make Calls
+    </div>
+    <div class="nav-item" onclick="switchTab('leads')">
+      <span class="nav-icon">◉</span> Leads
+    </div>
+  </nav>
+  <div class="sidebar-footer">Abra Logistics © 2025</div>
+</aside>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- ──────────────────────────────────────────── -->
+  <!-- TAB: DASHBOARD -->
+  <!-- ──────────────────────────────────────────── -->
+  <div class="tab active" id="tab-dashboard">
+    <div class="page-header">
+      <div class="page-title">Campaign Overview</div>
+      <div class="page-sub">Auto-refreshes every 15 seconds</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card" style="--c: #7c6ef8">
+        <div class="stat-label">Total Calls</div>
+        <div class="stat-value" id="s-total">—</div>
+      </div>
+      <div class="stat-card" style="--c: #3ecf8e">
+        <div class="stat-label">Interested</div>
+        <div class="stat-value" id="s-interested">—</div>
+        <div class="stat-sub">Asked for callback</div>
+      </div>
+      <div class="stat-card" style="--c: #f59e0b">
+        <div class="stat-label">No Answer</div>
+        <div class="stat-value" id="s-noanswer">—</div>
+      </div>
+      <div class="stat-card" style="--c: #f04060">
+        <div class="stat-label">Declined</div>
+        <div class="stat-value" id="s-declined">—</div>
+      </div>
+      <div class="stat-card" style="--c: #c084fc">
+        <div class="stat-label">Conversion</div>
+        <div class="stat-value" id="s-rate">—</div>
+        <div class="stat-sub">Interested / Total</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Call Outcome Breakdown</div>
+      <div class="bar-track">
+        <div class="bar-seg" id="bar-yes" style="background:#3ecf8e; width:0%"></div>
+        <div class="bar-seg" id="bar-no" style="background:#f04060; width:0%"></div>
+        <div class="bar-seg" id="bar-na" style="background:#f59e0b; width:0%"></div>
+      </div>
+      <div class="bar-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3ecf8e"></div>Interested</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f04060"></div>Declined</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>No Answer</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Recent Leads</div>
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Phone</th><th>Status</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="recent-leads-body">
+          <tr><td colspan="4" class="empty">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────────────────── -->
+  <!-- TAB: MAKE CALLS -->
+  <!-- ──────────────────────────────────────────── -->
+  <div class="tab" id="tab-call">
+    <div class="page-header">
+      <div class="page-title">Make Calls</div>
+      <div class="page-sub">Single test call or bulk CSV campaign</div>
+    </div>
+
+    <!-- Single call -->
+    <div class="card">
+      <div class="card-title">📞 Single Call — Test the Agent</div>
+      <div class="input-label">PHONE NUMBER (with country code)</div>
+      <div class="input-group">
+        <input type="tel" id="single-phone" placeholder="+919876543210" style="flex:1">
+        <button class="btn btn-primary" id="btn-single" onclick="callSingle()">Call Now</button>
+      </div>
+      <div id="call-log" style="margin-top: 18px;"></div>
+    </div>
+
+    <!-- Bulk campaign -->
+    <div class="card">
+      <div class="card-title">🚀 Bulk Campaign — CSV Upload</div>
+      <div class="code-hint">
+        <span>phone</span><br>
+        +919876543210<br>
+        +918765432109<br>
+        +917654321098
+      </div>
+      <div class="section-row">
+        <div style="flex:1">
+          <div class="input-label">CSV FILE</div>
+          <input type="file" id="csv-file" accept=".csv">
+        </div>
+        <div style="width:140px">
+          <div class="input-label">DELAY (seconds)</div>
+          <input type="number" id="delay" value="5" min="2" max="60" style="width:100%">
+        </div>
+        <button class="btn btn-secondary" id="btn-campaign" onclick="startCampaign()">Launch Campaign</button>
+      </div>
+    </div>
+
+    <!-- Agent script -->
+    <div class="card">
+      <div class="card-title">🎙️ What Priya (AI Agent) Says</div>
+      <div style="background: var(--surface2); border-radius: var(--radius); padding: 18px; font-size: 13px; line-height: 1.9; color: var(--muted);">
+        <div style="color: var(--accent); font-weight: 600; margin-bottom: 8px;">Opening</div>
+        "Hello! This is Priya calling from Abra Logistics, a Bengaluru-based shipping company. Do you have a moment to hear about our logistics services?"
+        <div style="color: var(--purple); font-weight: 600; margin: 14px 0 8px;">If Interested</div>
+        Collects: name, company, best callback time → saves to Google Sheets
+        <div style="color: var(--red); font-weight: 600; margin: 14px 0 8px;">If Not Interested</div>
+        "No problem at all! Thank you for your time. Have a great day!" → ends call
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────────────────── -->
+  <!-- TAB: LEADS -->
+  <!-- ──────────────────────────────────────────── -->
+  <div class="tab" id="tab-leads">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-end">
+      <div>
+        <div class="page-title">All Leads</div>
+        <div class="page-sub" id="leads-count">Loading...</div>
+      </div>
+      <button class="btn btn-ghost" onclick="fetchLeads()">↻ Refresh</button>
+    </div>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Phone</th><th>Name</th><th>Company</th>
+            <th>Status</th><th>Callback</th><th>Duration</th>
+          </tr>
+        </thead>
+        <tbody id="leads-body">
+          <tr><td colspan="7" class="empty">Loading leads...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const API = 'http://localhost:8000';
+let callLog = [];
+
+// ── Navigation ──────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type === 'error' ? '#f04060' : '#3ecf8e';
+  el.style.color = type === 'error' ? '#fff' : '#000';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+// ── Badge helper ─────────────────────────────────────────────────────────────
+function badge(status) {
+  const map = {
+    'Yes':       ['#3ecf8e', '#3ecf8e30'],
+    'No':        ['#f04060', '#f0406030'],
+    'No Answer': ['#f59e0b', '#f59e0b30'],
+  };
+  const [color, bg] = map[status] || ['#5a6275', '#5a627520'];
+  return `<span class="badge" style="color:${color};background:${bg};border-color:${color}55">${status || 'Unknown'}</span>`;
+}
+
+// ── Fetch Stats ──────────────────────────────────────────────────────────────
+async function fetchStats() {
+  try {
+    const r = await fetch(API + '/api/stats');
+    const d = await r.json();
+    document.getElementById('s-total').textContent = d.total;
+    document.getElementById('s-interested').textContent = d.interested;
+    document.getElementById('s-noanswer').textContent = d.noAnswer;
+    document.getElementById('s-declined').textContent = d.declined;
+    document.getElementById('s-rate').textContent = d.conversionRate + '%';
+    if (d.total > 0) {
+      document.getElementById('bar-yes').style.width = (d.interested / d.total * 100) + '%';
+      document.getElementById('bar-no').style.width  = (d.declined  / d.total * 100) + '%';
+      document.getElementById('bar-na').style.width  = (d.noAnswer  / d.total * 100) + '%';
+    }
+  } catch {}
+}
+
+// ── Fetch Leads ──────────────────────────────────────────────────────────────
+async function fetchLeads() {
+  try {
+    const r = await fetch(API + '/api/leads');
+    const d = await r.json();
+    const leads = d.leads || [];
+
+    document.getElementById('leads-count').textContent = leads.length + ' total leads captured';
+
+    // Full table
+    const tbody = document.getElementById('leads-body');
+    if (leads.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No leads yet. Make your first call!</td></tr>';
+    } else {
+      tbody.innerHTML = leads.map(l => `
+        <tr>
+          <td class="mono" style="font-size:11px">${l.date || '—'}</td>
+          <td class="mono">${l.phone || '—'}</td>
+          <td style="font-weight:600">${l.name || '—'}</td>
+          <td style="color:var(--muted)">${l.company || '—'}</td>
+          <td>${badge(l.interested)}</td>
+          <td style="color:var(--muted)">${l.callback_time || '—'}</td>
+          <td class="mono">${l.duration || '—'}</td>
+        </tr>`).join('');
+    }
+
+    // Recent 5 on dashboard
+    const recent = document.getElementById('recent-leads-body');
+    if (leads.length === 0) {
+      recent.innerHTML = '<tr><td colspan="4" class="empty">No leads yet. Start a campaign!</td></tr>';
+    } else {
+      recent.innerHTML = leads.slice(0, 5).map(l => `
+        <tr>
+          <td style="font-weight:600">${l.name || 'Unknown'}</td>
+          <td class="mono">${l.phone || '—'}</td>
+          <td>${badge(l.interested)}</td>
+          <td style="color:var(--muted);font-size:11px">${l.date || '—'}</td>
+        </tr>`).join('');
+    }
+  } catch {}
+}
+
+// ── Single Call ──────────────────────────────────────────────────────────────
+async function callSingle() {
+  const phone = document.getElementById('single-phone').value.trim();
+  if (!phone) return toast('Enter a phone number', 'error');
+  const btn = document.getElementById('btn-single');
+  btn.disabled = true; btn.textContent = 'Calling...';
+  try {
+    const r = await fetch(API + '/api/call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const d = await r.json();
+    if (d.success) {
+      toast('📞 Call initiated to ' + phone);
+      document.getElementById('single-phone').value = '';
+      callLog.unshift({ phone, time: new Date().toLocaleTimeString('en-IN'), status: 'Dialing...' });
+      renderCallLog();
+    } else {
+      toast(d.error || 'Failed', 'error');
+    }
+  } catch {
+    toast('Cannot reach backend. Is it running?', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Call Now';
+}
+
+function renderCallLog() {
+  const el = document.getElementById('call-log');
+  if (!callLog.length) { el.innerHTML = ''; return; }
+  el.innerHTML = callLog.map(c =>
+    `<div class="call-log-row">
+      <span class="mono" style="color:var(--accent)">${c.phone}</span>
+      <span style="color:var(--muted)">${c.status}</span>
+      <span style="color:var(--muted)">${c.time}</span>
+    </div>`
+  ).join('');
+}
+
+// ── Campaign ─────────────────────────────────────────────────────────────────
+async function startCampaign() {
+  const fileInput = document.getElementById('csv-file');
+  const delay = document.getElementById('delay').value;
+  if (!fileInput.files[0]) return toast('Upload a CSV file first', 'error');
+  const btn = document.getElementById('btn-campaign');
+  btn.disabled = true; btn.textContent = 'Starting...';
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  fd.append('delay_seconds', delay);
+  try {
+    const r = await fetch(API + '/api/campaign', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) {
+      toast('🚀 Campaign launched — ' + d.total + ' numbers queued');
+      fileInput.value = '';
+    } else {
+      toast(d.error || 'Failed', 'error');
+    }
+  } catch {
+    toast('Cannot reach backend. Is it running?', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Launch Campaign';
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+fetchStats();
+fetchLeads();
+setInterval(() => { fetchStats(); fetchLeads(); }, 15000);
+</script>
+</body>
+</html>
